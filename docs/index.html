@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>台股大盤過熱警示儀表板</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0f;--sur:#17171a;--sur2:#1f1f24;--sur3:#26262d;
+  --bd:rgba(255,255,255,.08);--bd2:rgba(255,255,255,.13);
+  --tx:#e8e7e2;--mu:#7a7975;
+  --gn:#22d992;--am:#f5a623;--rd:#f05252;--bl:#4d9eff;--pu:#b57ef5;
+  --gn-bg:rgba(34,217,146,.12);--am-bg:rgba(245,166,35,.12);--rd-bg:rgba(240,82,82,.14);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.6}
+.hdr{background:#111115;border-bottom:1px solid var(--bd2);padding:13px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
+.hdr h1{font-size:15px;font-weight:600}
+.hdr-sub{font-size:11px;color:var(--mu);margin-left:6px;font-weight:400}
+.hdr-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#spill{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:500;white-space:nowrap;background:var(--am-bg);color:var(--am);border:1px solid rgba(245,166,35,.35)}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+button{background:var(--sur2);border:1px solid var(--bd2);border-radius:6px;padding:5px 11px;font-size:12px;color:var(--tx);cursor:pointer;transition:background .15s}
+button:hover{background:var(--sur3)}
+.info-bar{background:var(--sur);border-bottom:1px solid var(--bd);padding:9px 24px;font-size:11px;color:var(--mu);display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.info-bar strong{color:var(--tx)}
+.sc{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:500}
+.c-cbc{background:rgba(34,217,146,.12);color:var(--gn);border:1px solid rgba(34,217,146,.25)}
+.c-twse{background:rgba(240,130,82,.12);color:#f08052;border:1px solid rgba(240,130,82,.25)}
+.c-fm{background:rgba(77,158,255,.1);color:var(--bl);border:1px solid rgba(77,158,255,.25)}
+.c-fred{background:rgba(181,126,245,.12);color:var(--pu);border:1px solid rgba(181,126,245,.25)}
+.c-moea{background:rgba(245,166,35,.1);color:var(--am);border:1px solid rgba(245,166,35,.25)}
+.c-fb{background:rgba(255,255,255,.04);color:var(--mu);border:1px solid var(--bd)}
+.main{max-width:1320px;margin:0 auto;padding:18px 24px 40px}
+.sec{margin-bottom:24px}
+.sechdr{display:flex;align-items:center;gap:9px;margin-bottom:10px;border-left:3px solid var(--bd2);padding-left:10px}
+.sectitle{font-size:13px;font-weight:600}.secsub{font-size:10px;color:var(--mu);margin-top:1px}
+.sumbar{background:var(--sur);border:1px solid var(--bd2);border-radius:11px;padding:13px 18px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.si{text-align:center;min-width:48px}.sn{font-size:20px;font-weight:700}.sl{font-size:10px;color:var(--mu);margin-top:1px}
+.sdiv{width:1px;height:32px;background:var(--bd2)}
+.rm{flex:1;min-width:180px}
+.rml{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);margin-bottom:5px}
+.rt{height:7px;border-radius:4px;background:linear-gradient(to right,#22d992,#f5a623 45%,#f05252);position:relative;overflow:visible}
+.rc{position:absolute;top:-4px;width:15px;height:15px;border-radius:50%;background:#0d0d0f;border:2.5px solid #e8e7e2;transform:translateX(-50%);transition:left 1.2s ease;box-shadow:0 0 7px rgba(255,255,255,.2)}
+.card{background:var(--sur);border-radius:11px;border:1px solid var(--bd);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+.card:hover{border-color:var(--bd2)}
+.chdr{padding:11px 16px 9px;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.cmeta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px}
+.cname{font-size:13px;font-weight:600}.cdesc{font-size:11px;color:var(--mu)}
+.wb{font-size:11px;font-weight:600;padding:2px 8px;border-radius:14px;white-space:nowrap}
+.wg{background:var(--gn-bg);color:var(--gn);border:1px solid rgba(34,217,146,.3)}
+.wa{background:var(--am-bg);color:var(--am);border:1px solid rgba(245,166,35,.3)}
+.wr{background:var(--rd-bg);color:var(--rd);border:1px solid rgba(240,82,82,.3)}
+.wn{background:rgba(255,255,255,.04);color:var(--mu);border:1px solid var(--bd)}
+.tw{overflow-x:auto;padding:0 16px 12px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;font-weight:600;color:var(--mu);padding:5px 9px;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:5px 9px;border-bottom:1px solid rgba(255,255,255,.04);white-space:nowrap;color:var(--tx)}
+tr:last-child td{border-bottom:none}
+.vc{font-weight:600;font-variant-numeric:tabular-nums}
+.du{color:var(--gn)}.dd{color:var(--rd)}.df{color:var(--mu)}
+.na{color:var(--mu);font-style:italic}.lr td{background:rgba(77,158,255,.04)}
+.wc{font-size:11px;padding:2px 6px;border-radius:9px;display:inline-block}
+.csec{padding:0 16px 13px}
+.clbl{font-size:11px;color:var(--mu);margin-bottom:6px}
+.cwrap{position:relative;height:140px}
+.anote{font-size:11px;color:var(--mu);padding:5px 16px 11px;border-top:1px solid var(--bd)}
+.anote strong{color:var(--am)}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:12px;color:var(--mu)}
+.spinner{width:32px;height:32px;border:3px solid var(--bd2);border-top-color:var(--bl);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{background:var(--rd-bg);border:1px solid rgba(240,82,82,.3);border-radius:8px;padding:14px 18px;font-size:12px;color:var(--rd);margin:16px 0;line-height:1.7}
+@media(max-width:700px){.hdr,.info-bar{padding:10px 12px}.main{padding:12px 12px 30px}.cwrap{height:110px}}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <h1>🔍 台股大盤過熱警示儀表板<span class="hdr-sub">全自動更新版 · GitHub Actions 每月26日自動抓取</span></h1>
+  <div class="hdr-r">
+    <span id="ts" style="font-size:11px;color:var(--mu)">—</span>
+    <span id="spill"><span class="dot"></span>載入中</span>
+    <button onclick="loadData()">↻ 重整</button>
+  </div>
+</header>
+
+<div class="info-bar">
+  <strong>資料來源：</strong>
+  <span class="sc c-cbc">🏦 CBC</span>M1B/M2年增率
+  <span class="sc c-moea">📋 MOEA</span>外銷動向指數
+  <span class="sc c-fm">📈 FinMind</span>殖利率/融資/景氣指標
+  <span class="sc c-fred">🏛️ FRED</span>HY/IG利差/VIX
+  <span class="sc c-twse">📊 TWSE</span>成交量/巴菲特指標
+  <span class="sc c-fb">📋 備用</span>API失敗退回已查證值
+</div>
+
+<main class="main">
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <div>從 GitHub Pages 讀取最新資料...</div>
+  </div>
+  <div id="err-area"></div>
+  <div id="dash" style="display:none">
+    <div class="sumbar">
+      <div class="si"><div class="sn" id="sum-r" style="color:var(--rd)">—</div><div class="sl">高警戒</div></div>
+      <div class="sdiv"></div>
+      <div class="si"><div class="sn" id="sum-a" style="color:var(--am)">—</div><div class="sl">警示</div></div>
+      <div class="sdiv"></div>
+      <div class="si"><div class="sn" id="sum-g" style="color:var(--gn)">—</div><div class="sl">正常</div></div>
+      <div class="sdiv"></div>
+      <div class="si"><div class="sn" id="sum-n" style="color:var(--mu)">—</div><div class="sl">NA</div></div>
+      <div class="sdiv"></div>
+      <div class="rm">
+        <div class="rml"><span>低風險</span><span>市場過熱程度</span><span>高風險</span></div>
+        <div class="rt"><div class="rc" id="rc" style="left:50%"></div></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sechdr"><span>🇺🇸</span><div><div class="sectitle">美國基本面警示指標</div><div class="secsub">美債殖利率（FinMind）· HY/IG信用利差（FRED）</div></div></div><div id="us"></div></div>
+    <div class="sec"><div class="sechdr"><span>🇹🇼</span><div><div class="sectitle">台灣基本面警示指標</div><div class="secsub">M1B/M2（CBC API）· 領先指標（FinMind）· 外銷動向（MOEA）</div></div></div><div id="tw"></div></div>
+    <div class="sec"><div class="sechdr"><span>📊</span><div><div class="sectitle">估值過熱指標</div><div class="secsub">巴菲特指標（TWSE市值÷主計總處GDP）· M1B成交比重法</div></div></div><div id="val"></div></div>
+    <div class="sec"><div class="sechdr"><span>📈</span><div><div class="sectitle">技術面 / 籌碼面</div><div class="secsub">大盤成交量（TWSE）· 融資餘額（FinMind）· VIX（FRED）</div></div></div><div id="tech"></div></div>
+  </div>
+</main>
+
+<script>
+const C={green:'#22d992',amber:'#f5a623',red:'#f05252',blue:'#4d9eff',gray:'#5a5a60'};
+const GRID='#1e1e24',TICK='#5a5a60';
+let charts={};
+
+const IND=[
+  {id:'us_3m', grp:'us', name:'美國3個月公債殖利率（月均）',unit:'%',desc:'短期資金成本 · Fed政策利率代理',src:'FinMind GovernmentBondsYield',srcC:'c-fm',th:'>4.5% 高利率警戒，>4.0% 偏高',wL:4.5,aFn:v=>v==null?'n':v>4.5?'r':v>4.0?'a':'g',aTx:v=>v==null?'NA':v>4.5?'高利率警戒':v>4.0?'偏高':'正常'},
+  {id:'us_2y', grp:'us', name:'美國2年期公債殖利率（月均）',unit:'%',desc:'市場升息預期 · 2Y>10Y=殖利率倒掛警訊',src:'FinMind GovernmentBondsYield',srcC:'c-fm',th:'>4.2% 升息預期高，>3.8% 偏高',wL:4.2,aFn:v=>v==null?'n':v>4.2?'r':v>3.8?'a':'g',aTx:v=>v==null?'NA':v>4.2?'升息預期高':v>3.8?'偏高':'正常'},
+  {id:'us_10y',grp:'us', name:'美國10年期公債殖利率（月均）',unit:'%',desc:'長期融資成本 · 高殖利率壓制股票估值',src:'FinMind GovernmentBondsYield',srcC:'c-fm',th:'>4.5% 估值壓制，>4.0% 偏高',wL:4.5,aFn:v=>v==null?'n':v>4.5?'r':v>4.0?'a':'g',aTx:v=>v==null?'NA':v>4.5?'估值壓制':v>4.0?'偏高':'正常'},
+  {id:'hy',    grp:'us', name:'美國HY高收益債信用利差',unit:'bp',desc:'企業違約風險代理 · ICE BofA HY OAS',src:'FRED BAMLH0A0HYM2',srcC:'c-fred',th:'>500bp 高度警戒，>400bp 偏高',wL:500,aFn:v=>v==null?'n':v>500?'r':v>400?'a':'g',aTx:v=>v==null?'NA':v>500?'高度警戒':v>400?'偏高':'正常'},
+  {id:'ig',    grp:'us', name:'美國IG投資級債信用利差',unit:'bp',desc:'系統性壓力早期訊號 · ICE BofA IG OAS',src:'FRED BAMLC0A0CM',srcC:'c-fred',th:'>200bp 系統性壓力，>150bp 偏高',wL:200,aFn:v=>v==null?'n':v>200?'r':v>150?'a':'g',aTx:v=>v==null?'NA':v>200?'系統性壓力':v>150?'偏高':'正常'},
+  {id:'m1b',   grp:'tw', name:'台灣 M1B 年增率',unit:'%',desc:'M1B>M2（黃金交叉）=股市資金行情 · CBC每月22-26日公布',src:'CBC API',srcC:'c-cbc',th:'>15% 過熱，8-15% 偏熱，<8% 正常',wL:15,aFn:v=>v==null?'n':v>15?'r':v>8?'a':'g',aTx:v=>v==null?'NA':v>15?'過熱':v>8?'偏熱':'正常'},
+  {id:'m2',    grp:'tw', name:'台灣 M2 年增率',unit:'%',desc:'廣義貨幣供給 · M1B>M2=黃金交叉 · >10%=流動性偏高',src:'CBC API',srcC:'c-cbc',th:'M1B>M2=黃金交叉；>10% 流動性偏高',wL:10,aFn:v=>v==null?'n':v>10?'a':'g',aTx:v=>v==null?'NA':v>10?'流動性偏高':'正常'},
+  {id:'lei',   grp:'tw', name:'台灣景氣領先指標（不含趨勢）',unit:'',desc:'國發會 leading_notrend · 需 FinMind backer 帳號',src:'FinMind TaiwanBusinessIndicator',srcC:'c-fm',th:'>103 景氣過熱，100-103 擴張，<100 收縮',wL:103,aFn:v=>v==null?'n':v>103?'r':v>100?'a':'g',aTx:v=>v==null?'NA':v>103?'景氣過熱':v>100?'擴張':'收縮'},
+  {id:'export',grp:'tw', name:'外銷訂單動向指數（以家數計）',unit:'',desc:'預期增加家數%+0.5×持平% · 表示對下月看法 · MOEA每月20-23日公布',src:'MOEA 經濟部統計處',srcC:'c-moea',th:'>60 景氣過熱，50-60 擴張，<50 收縮',wL:60,aFn:v=>v==null?'n':v>60?'r':v>50?'a':'g',aTx:v=>v==null?'NA':v>60?'景氣過熱':v>50?'擴張':'收縮'},
+  {id:'bf',    grp:'val', name:'台灣巴菲特指標（股市市值/GDP）',unit:'%',desc:'台股上市市值（TWSE）÷ 台灣名目GDP（主計總處）× 100%，季資料',src:'TWSE+主計總處GDP',srcC:'c-twse',th:'<115% 合理，115-150% 過熱，>150% 泡沫',wL:150,aFn:v=>v==null?'n':v>150?'r':v>115?'a':'g',aTx:v=>v==null?'NA':v>200?'極端泡沫':v>150?'泡沫警戒':v>115?'過熱':'合理'},
+  {id:'m1br',  grp:'val', name:'M1B成交比重法（杜金龍框架）',unit:'%',desc:'(上市+櫃買日成交×20日) ÷ M1B · 衡量股市資金週轉強度',src:'TWSE+CBC計算',srcC:'c-twse',th:'3-5% 正常，5-6% 觀察，6-8% 偏熱，>8% 瘋狂',wL:8,aFn:v=>v==null?'n':v>8?'r':v>6?'a':'g',aTx:v=>v==null?'NA':v>8?'瘋狂水位':v>6?'偏熱':'正常'},
+  {id:'vol',   grp:'tech',name:'台股上市日均成交金額（月均）',unit:'兆元',desc:'TWSE FMTQIK 月均日成交',src:'TWSE FMTQIK',srcC:'c-twse',th:'<0.5兆 正常，>1兆 高警戒，>2.5兆 頭部量',wL:2.5,aFn:v=>v==null?'n':v>2.5?'r':v>1.0?'a':'g',aTx:v=>v==null?'NA':v>2.5?'頭部量警戒':v>1.0?'高警戒':v>0.5?'偏熱':'正常'},
+  {id:'margin',grp:'tech',name:'台股融資餘額（月末）',unit:'億元',desc:'FinMind TaiwanStockTotalMarginPurchaseShortSale',src:'FinMind',srcC:'c-fm',th:'<3500億 正常，>4500億 高警戒，>4800億 危險',wL:4800,aFn:v=>v==null?'n':v>4800?'r':v>4500?'a':'g',aTx:v=>v==null?'NA':v>4800?'接近歷史高':v>4500?'高警戒':'偏高'},
+  {id:'vix',   grp:'tech',name:'VIX 恐慌指數（月均）',unit:'',desc:'CBOE VIX 月均值（FRED VIXCLS）',src:'FRED VIXCLS',srcC:'c-fred',th:'<15 過度樂觀，15-20 正常，20-30 警覺，>30 恐慌',wL:30,aFn:v=>v==null?'n':v>30?'r':v>20?'a':'g',aTx:v=>v==null?'NA':v>30?'市場恐慌':v>20?'警覺':v<=15?'過度樂觀':'正常'},
+];
+
+const LVC={g:'wg',a:'wa',r:'wr',n:'wn'};
+function dH(a,b){if(a==null||b==null)return '<span class="df">—</span>';const d=a-b;if(d>0)return `<span class="du">▲${Math.abs(d).toFixed(2)}</span>`;if(d<0)return `<span class="dd">▼${Math.abs(d).toFixed(2)}</span>`;return '<span class="df">持平</span>';}
+function fV(v,u){return v!=null?`${v.toLocaleString('en-US',{maximumFractionDigits:2})}${u?' '+u:''}`:'NA';}
+
+function renderCard(ind,series,srcLabel){
+  const valid=series.filter(r=>r.v!=null);
+  const last=valid[valid.length-1];const prev=valid[valid.length-2];
+  const lv=ind.aFn(last?.v??null);const tx=ind.aTx(last?.v??null);
+  const bc=LVC[lv]||'wn';
+  let trs='';
+  series.forEach((r,i)=>{
+    const pv=i>0?series[i-1].v:null;const isL=(i===series.length-1)&&r.v!=null;
+    const rlv=r.v!=null?ind.aFn(r.v):'n';const rtx=r.v!=null?ind.aTx(r.v):'NA';
+    const rc=LVC[rlv]||'wn';
+    const vStr=r.v!=null?`<span class="vc">${fV(r.v,ind.unit)}</span>`:'<span class="na">NA</span>';
+    trs+=`<tr class="${isL?'lr':''}"><td>${r.d}</td><td>${vStr}</td><td>${r.v!=null&&pv!=null?dH(r.v,pv):'<span class="df">—</span>'}</td><td><span class="wc ${rc}">${rtx}</span></td></tr>`;
+  });
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML=`
+    <div class="chdr">
+      <div style="flex:1">
+        <div class="cmeta"><span class="cname">${ind.name}</span><span class="wb ${bc}">${tx}</span><span class="sc ${ind.srcC}">${srcLabel}</span></div>
+        <div class="cdesc">${ind.desc}</div>
+      </div>
+      ${last?`<div style="text-align:right;flex-shrink:0"><div style="font-size:21px;font-weight:700">${fV(last.v,ind.unit)}</div><div style="font-size:11px;color:var(--mu)">${last.d} · ${prev?dH(last.v,prev.v):'—'}</div></div>`:''}
+    </div>
+    <div class="tw"><table><thead><tr><th>期間</th><th>數值</th><th>較上期</th><th>警示等級</th></tr></thead><tbody>${trs}</tbody></table></div>
+    <div class="csec"><div class="clbl">趨勢走勢圖（● 顏色=警示等級）— ${ind.th}</div><div class="cwrap"><canvas id="ch-${ind.id}"></canvas></div></div>
+    <div class="anote">⚠ 警示水位：<strong>${ind.th}</strong></div>`;
+  return card;
+}
+
+function drawChart(ind,series){
+  const rows=series.filter(r=>r.v!=null);if(rows.length<2)return;
+  const cv=document.getElementById(`ch-${ind.id}`);if(!cv)return;
+  if(charts[ind.id])charts[ind.id].destroy();
+  const ptC=rows.map(r=>({g:C.green,a:C.amber,r:C.red,n:C.gray}[ind.aFn(r.v)]||C.blue));
+  charts[ind.id]=new Chart(cv.getContext('2d'),{type:'line',data:{labels:rows.map(r=>r.d),datasets:[
+    {data:rows.map(r=>r.v),borderColor:C.blue,borderWidth:2,pointBackgroundColor:ptC,pointBorderColor:ptC,pointRadius:5,pointHoverRadius:7,fill:{target:'origin',above:'rgba(77,158,255,.06)'},tension:0.3},
+    ...(ind.wL!=null?[{data:rows.map(()=>ind.wL),borderColor:C.red,borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}]:[])
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const v=ctx.parsed.y;return ` ${v.toLocaleString('en-US',{maximumFractionDigits:2})}${ind.unit?' '+ind.unit:''} [${ind.aTx(v)}]`;
+  }}}},scales:{x:{ticks:{color:TICK,font:{size:10},maxTicksLimit:9,autoSkip:true,maxRotation:45},grid:{color:GRID}},y:{ticks:{color:TICK,font:{size:10},callback:v=>`${v}${ind.unit&&ind.unit.length<5?' '+ind.unit:''}`},grid:{color:GRID}}}}});
+}
+
+function setSpill(type,msg){
+  const p=document.getElementById('spill');
+  const s={ok:'rgba(34,217,146,.15)|#22d992|rgba(34,217,146,.35)',warn:'rgba(245,166,35,.12)|#f5a623|rgba(245,166,35,.35)',load:'rgba(77,158,255,.1)|#4d9eff|rgba(77,158,255,.3)'};
+  const[bg,fg,bc]=(s[type]||s.warn).split('|');
+  p.style.cssText=`background:${bg};color:${fg};border:1px solid ${bc};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:5px`;
+  p.innerHTML=msg;
+}
+
+async function loadData(){
+  document.getElementById('loading').style.display='flex';
+  document.getElementById('dash').style.display='none';
+  document.getElementById('err-area').innerHTML='';
+  setSpill('load','<span class="dot"></span>讀取資料中...');
+  Object.values(charts).forEach(c=>c.destroy());charts={};
+  ['us','tw','val','tech'].forEach(id=>document.getElementById(id).innerHTML='');
+
+  let payload;
+  try{
+    const r=await fetch(`./data.json?t=${Date.now()}`);
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    payload=await r.json();
+  }catch(e){
+    document.getElementById('loading').style.display='none';
+    document.getElementById('err-area').innerHTML=`<div class="err">⚠ 無法讀取 data.json：${e.message}<br><br>
+      <strong>請確認：</strong><br>
+      1. GitHub Pages 已啟用（Settings → Pages → Source: Deploy from branch main / docs）<br>
+      2. GitHub Actions 已至少執行一次（產生 docs/data.json）<br>
+      3. 如果是第一次使用，請先在本機執行 <code>python scripts/fetch_data.py</code> 產生初始 data.json 並 push 到 repo</div>`;
+    setSpill('warn','⚠ 資料讀取失敗');return;
+  }
+
+  const DATA=payload.data||{};const SOURCES=payload.sources||{};
+  const gMap={us:'us',tw:'tw',val:'val',tech:'tech'};
+  let cnt={g:0,a:0,r:0,n:0};
+
+  for(const ind of IND){
+    const series=DATA[ind.id]||[];
+    const rawSrc=SOURCES[ind.id]||'備用值';
+    const srcLabel=rawSrc==='備用值'?'📋 備用值':`✅ ${rawSrc}`;
+    document.getElementById(gMap[ind.grp]).appendChild(renderCard(ind,series,srcLabel));
+    setTimeout(()=>drawChart(ind,series),60);
+    const valid=series.filter(r=>r.v!=null);const last=valid[valid.length-1];
+    const lv=last?ind.aFn(last.v):'n';cnt[lv]=(cnt[lv]||0)+1;
+  }
+
+  document.getElementById('sum-r').textContent=cnt.r||0;
+  document.getElementById('sum-a').textContent=cnt.a||0;
+  document.getElementById('sum-g').textContent=cnt.g||0;
+  document.getElementById('sum-n').textContent=cnt.n||0;
+  const tot=(cnt.r||0)+(cnt.a||0)+(cnt.g||0);
+  const rs=tot>0?((cnt.r||0)*3+(cnt.a||0)*1.5)/(tot*3):.5;
+  document.getElementById('rc').style.left=`${Math.min(rs*100,97)}%`;
+  const tw=payload.updated_tw||'—';
+  document.getElementById('ts').textContent=`資料更新：${tw}`;
+  document.getElementById('loading').style.display='none';
+  document.getElementById('dash').style.display='block';
+  setSpill('ok',`✅ 已更新 · ${tw}`);
+}
+window.addEventListener('load',loadData);
+</script>
+</body>
+</html>
