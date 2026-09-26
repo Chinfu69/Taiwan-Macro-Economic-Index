@@ -1,0 +1,46 @@
+name: 每月自動更新總經資料
+
+on:
+  schedule:
+    - cron: "0 3 26 * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/fetch_data.py"
+      - ".github/workflows/update_data.yml"
+
+jobs:
+  fetch-and-deploy:
+    name: 爬取資料並 commit 到 docs/data.json
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+      - name: Run data fetcher
+        env:
+          FRED_API_KEY:  ${{ secrets.FRED_API_KEY }}
+          FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+        run: python scripts/fetch_data.py
+      - name: Commit data.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data.json
+          git diff --staged --quiet || \
+            git commit -m "auto: 更新總經資料 $(date -u +'%Y/%m/%d %H:%M') UTC"
+      - name: Push
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
