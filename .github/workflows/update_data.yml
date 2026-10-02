@@ -40,10 +40,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git stash
-          git pull --rebase origin main
-          git stash pop
           git add docs/data.json
-          git diff --staged --quiet || \
-            git commit -m "auto: 更新總經資料 $(date -u +'%Y/%m/%d %H:%M') UTC"
-          git push origin main
+          git diff --staged --quiet && echo "No changes" && exit 0
+          git commit -m "auto: 更新總經資料 $(date -u +'%Y/%m/%d %H:%M') UTC"
+          git push origin HEAD:main --force-with-lease
