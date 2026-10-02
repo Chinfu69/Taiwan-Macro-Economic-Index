@@ -562,7 +562,6 @@ def fetch_fm_lei() -> list[dict]:
                             continue
                     if result:
                         result = sorted(result, key=lambda x: x["d"])[-MONTHS:]
-                        SRC["lei"] = "NDC開放資料"
                         log.info(f"  NDC 景氣領先指標: {len(result)} 筆，最新={result[-1]}")
                         return result
         except Exception as e:
@@ -577,65 +576,11 @@ def fetch_fm_lei() -> list[dict]:
                 pass
         if result:
             result = sorted(result, key=lambda x: x["d"])[-MONTHS:]
-            SRC["lei"] = "FinMind"
             log.info(f"  FinMind 景氣領先指標: {len(result)} 筆")
             return result
-    SRC["lei"] = "備用值"
     log.warning("景氣領先指標全部來源失敗，退回備用值")
     return FALLBACK["lei"]
                               
-def fetch_fm_lei() -> list[dict]:
-    NDC_URL = "https://ws.ndc.gov.tw/001/administrator/10/relfile/5781/6392/ea235bd9-d052-4a69-abfc-d5c785d3d0e2.csv"
-    r = safe_get(NDC_URL, timeout=15)
-    if r:
-        try:
-            lines = r.text.strip().splitlines()
-            if len(lines) >= 3:
-                header = [h.strip().strip('"').strip('\ufeff') for h in lines[0].split(",")]
-                lei_col = next((i for i, h in enumerate(header) if "領先" in h and "不含趨勢" in h), None)
-                if lei_col is not None:
-                    result = []
-                    for line in lines[1:]:
-                        if not line.strip():
-                            continue
-                        cols = [c.strip().strip('"') for c in line.split(",")]
-                        if len(cols) <= lei_col:
-                            continue
-                        try:
-                            raw = cols[0]
-                            m = re.match(r"(\d{4})[M/\-](\d{1,2})", raw)
-                            if not m:
-                                continue
-                            period = f"{m.group(1)}/{m.group(2).zfill(2)}"
-                            val_str = cols[lei_col].replace(",", "")
-                            if not val_str or val_str == "-":
-                                continue
-                            result.append({"d": period, "v": round(float(val_str), 2)})
-                        except (ValueError, IndexError):
-                            continue
-                    if result:
-                        result = sorted(result, key=lambda x: x["d"])[-MONTHS:]
-                        SRC["lei"] = "NDC開放資料"
-                        log.info(f"  NDC 景氣領先指標: {len(result)} 筆，最新={result[-1]}")
-                        return result
-        except Exception as e:
-            log.warning(f"NDC CSV 解析失敗：{e}")
-    rows = fm_fetch("TaiwanBusinessIndicator", {"start_date": months_ago(MONTHS + 2)})
-    if rows:
-        result = []
-        for row in rows:
-            try:
-                result.append({"d": ym(row["date"]), "v": round(float(row["leading_notrend"]), 2)})
-            except (KeyError, ValueError):
-                pass
-        if result:
-            result = sorted(result, key=lambda x: x["d"])[-MONTHS:]
-            SRC["lei"] = "FinMind"
-            log.info(f"  FinMind 景氣領先指標: {len(result)} 筆")
-            return result
-    SRC["lei"] = "備用值"
-    log.warning("景氣領先指標全部來源失敗，退回備用值")
-    return FALLBACK["lei"]
 
 # ── 備用值（官方查證，作為 API 失敗時的保底） ────────────────────────
 FALLBACK = {
