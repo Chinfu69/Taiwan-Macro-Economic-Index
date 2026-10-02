@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-10-02T01:48:43Z",
-  "updated_tw": "2026/10/02 01:48",
+  "updated_at": "2026-10-02T02:38:07Z",
+  "updated_tw": "2026/10/02 02:38",
   "sources": {
     "us_3m": "FinMind",
     "us_2y": "FinMind",
@@ -10,7 +10,7 @@
     "vix": "FRED",
     "m1b": "備用值",
     "m2": "備用值",
-    "lei": "備用值",
+    "lei": "FinMind",
     "export": "備用值",
     "vol": "TWSE",
     "bf": "TWSE+GDP",
